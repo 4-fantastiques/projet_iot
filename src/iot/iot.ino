@@ -1,35 +1,36 @@
-#include <TH02_dev.h>
+#include "libraries/ButtonModule/ButtonModule.h"
+#include "libraries/LightSensor/LightSensor.h"
+#include "libraries/TH02Module/TH02Module.h"
+#include "libraries/TH02Module/TH02Module.h"
 #include "Arduino.h"
-#include "Wire.h"
-#include "THSensor_base.h"
 
 #define buttonRedPin 5
 #define buttonGreenPin 4
 #define LIGHT_SENSOR_PIN A3
 #define SERIAL_BAUD_RATE 9600
 
-int buttonRedState = 0;
-int buttonGreenState = 0;
+ButtonModule buttonRed(buttonRedPin);
+ButtonModule buttonGreen(buttonGreenPin);
+LightSensorModule lightSensor(LIGHT_SENSOR_PIN);
+TH02Module th02Sensor;
 
 void setup()
 {
-    pinMode(buttonRedPin, INPUT);
-    pinMode(buttonGreenPin, INPUT);
     Serial.begin(SERIAL_BAUD_RATE); // Start serial communication
-
-    delay(150); // Wait for voltage to stabilize
-    TH02.begin();
-    delay(100);
+    buttonRed.init();
+    buttonGreen.init();
+    lightSensor.init();
+    th02Sensor.init();
 
     Serial.println("TH02_dev is available.\n");
 }
 
 void loop()
 {
-    buttonRedState = digitalRead(buttonRedPin);
-    buttonGreenState = digitalRead(buttonGreenPin);
+    buttonRed.update();
+    buttonGreen.update();
 
-    if (buttonRedState == LOW)
+    if (buttonRed.isPressed())
     {
         Serial.println("Button Red is pressed");
     }
@@ -38,7 +39,7 @@ void loop()
         Serial.println("Button Red is not pressed");
     }
 
-    if (buttonGreenState == LOW)
+    if (buttonGreen.isPressed())
     {
         Serial.println("Button Green is pressed");
     }
@@ -47,15 +48,10 @@ void loop()
         Serial.println("Button Green is not pressed");
     }
 
-    // Read light sensor value and map it to percentage
-    int rawLightValue = analogRead(LIGHT_SENSOR_PIN);
-    int lightLevel = map(rawLightValue, 0, 1023, 0, 100);
+    int lightLevel = lightSensor.getLightLevel();
+    float temperature = th02Sensor.getTemperature();
+    float humidity = th02Sensor.getHumidity();
 
-    // Read temperature and humidity from TH02 sensor
-    float temperature = TH02.ReadTemperature();
-    float humidity = TH02.ReadHumidity();
-
-    // Print temperature and humidity values to serial
     Serial.print("Temperature: ");
     Serial.print(temperature);
     Serial.println("C");
@@ -64,7 +60,6 @@ void loop()
     Serial.print(humidity);
     Serial.println("%");
 
-    // Print light level to serial
     Serial.print("Light level: ");
     Serial.print(lightLevel);
     Serial.println("%");
