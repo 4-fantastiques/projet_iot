@@ -1,5 +1,8 @@
 #include "libraries/ButtonModule/ButtonModule.h"
+#include "libraries/BuzzerModule/BuzzerModule.h"
+#include "libraries/LedModule/LedModule.h"
 #include "libraries/LightSensor/LightSensor.h"
+#include "libraries/OledModule/OledModule.h"
 #include "libraries/TH02Module/TH02Module.h"
 #include "Arduino.h"
 #include <SoftwareSerial.h>
@@ -9,8 +12,8 @@
 #define buttonGreenPin 4
 #define LIGHT_SENSOR_PIN A3
 #define SERIAL_BAUD_RATE 9600
-#define RX_PIN 10
-#define TX_PIN 11
+#define RX_PIN 8
+#define TX_PIN 9
 #define BUZZER_PIN 2
 #define LED_RED_PIN 6
 #define LED_GREEN_PIN 5
@@ -20,16 +23,16 @@ ButtonModule buttonGreen(buttonGreenPin);
 LightSensorModule lightSensor(LIGHT_SENSOR_PIN);
 TH02Module th02Sensor;
 
-SoftwareSerial mySerial(RX_PIN, TX_PIN); // RX, TX
-U8GLIB_SSD1306_128X32 u8g(U8G_I2C_OPT_NONE);  // I2C / TWI
+SoftwareSerial mySerial(RX_PIN, TX_PIN);     // RX, TX
+U8GLIB_SSD1306_128X32 u8g(U8G_I2C_OPT_NONE); // I2C / TWI
 
 void show_empty_screen()
 {
-    u8g.firstPage(); 
-    do 
-    { 
-      // Ne rien dessiner pour afficher un écran vide
-    } while (u8g.nextPage()); 
+    u8g.firstPage();
+    do
+    {
+        // Ne rien dessiner pour afficher un écran vide
+    } while (u8g.nextPage());
 }
 
 void setup()
@@ -41,9 +44,9 @@ void setup()
     lightSensor.init();
     th02Sensor.init();
 
-    pinMode(BUZZER_PIN, OUTPUT);      // Configurer la broche du buzzer comme sortie
-    pinMode(LED_RED_PIN, OUTPUT);     // Configurer la broche de la LED rouge comme sortie
-    pinMode(LED_GREEN_PIN, OUTPUT);   // Configurer la broche de la LED verte comme sortie
+    pinMode(BUZZER_PIN, OUTPUT);    // Configurer la broche du buzzer comme sortie
+    pinMode(LED_RED_PIN, OUTPUT);   // Configurer la broche de la LED rouge comme sortie
+    pinMode(LED_GREEN_PIN, OUTPUT); // Configurer la broche de la LED verte comme sortie
 
     digitalWrite(BUZZER_PIN, LOW);    // Assurez-vous que le buzzer est désactivé au départ
     digitalWrite(LED_RED_PIN, LOW);   // Assurez-vous que la LED rouge est éteinte au départ
@@ -57,8 +60,8 @@ void loop()
     buttonRed.update();
     buttonGreen.update();
 
-    const char* redButtonState = buttonRed.isPressed() ? "Button Red: pressed" : "Button Red: not pressed";
-    const char* greenButtonState = buttonGreen.isPressed() ? "Button Green: pressed" : "Button Green: not pressed";
+    const char *redButtonState = buttonRed.isPressed() ? "Button Red: pressed" : "Button Red: not pressed";
+    const char *greenButtonState = buttonGreen.isPressed() ? "Button Green: pressed" : "Button Green: not pressed";
 
     int lightLevel = lightSensor.getLightLevel();
     float temperature = th02Sensor.getTemperature();
@@ -68,19 +71,25 @@ void loop()
     show_empty_screen();
 
     // Activer le buzzer et la LED verte si le bouton vert est pressé
-    if (buttonGreen.isPressed()) {
-        tone(BUZZER_PIN, 500); // Émettre un son de 1000 Hz
-        delay(100);              // Maintenir le son pendant 10 ms
-        noTone(BUZZER_PIN);     // Arrêter le son
+    if (buttonGreen.isPressed())
+    {
+        tone(BUZZER_PIN, 500);             // Émettre un son de 1000 Hz
+        delay(100);                        // Maintenir le son pendant 10 ms
+        noTone(BUZZER_PIN);                // Arrêter le son
         digitalWrite(LED_GREEN_PIN, HIGH); // Allumer la LED verte
-    } else {
+    }
+    else
+    {
         digitalWrite(LED_GREEN_PIN, LOW); // Éteindre la LED verte
     }
 
     // Allumer la LED rouge si le bouton rouge est pressé
-    if (buttonRed.isPressed()) {
+    if (buttonRed.isPressed())
+    {
         digitalWrite(LED_RED_PIN, HIGH); // Allumer la LED rouge
-    } else {
+    }
+    else
+    {
         digitalWrite(LED_RED_PIN, LOW); // Éteindre la LED rouge
     }
 
