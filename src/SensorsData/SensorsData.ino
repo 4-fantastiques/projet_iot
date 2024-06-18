@@ -3,77 +3,71 @@
 #include "Wire.h"
 #include "THSensor_base.h"
 
-#define Serial Serial
+#define buttonRedPin 5
+#define buttonGreenPin 4
+#define LIGHT_SENSOR_PIN A3
+#define SERIAL_BAUD_RATE 9600
 
-#ifdef __AVR__
-    #include <SoftwareSerial.h>
-    SoftwareSerial SSerial(2, 3); // RX, TX
-    #define COMSerial Serial
-    #define Serial Serial
-    TH02_dev TH02;
-#endif
+int buttonRedState = 0;
+int buttonGreenState = 0;
 
-#ifdef ARDUINO_SAMD_VARIANT_COMPLIANCE
-    #define COMSerial Serial1
-    #define Serial SerialUSB
-    TH02_dev TH02;
-#endif
+void setup()
+{
+    pinMode(buttonRedPin, INPUT);
+    pinMode(buttonGreenPin, INPUT);
+    Serial.begin(SERIAL_BAUD_RATE); // Start serial communication
 
-#ifdef ARDUINO_ARCH_STM32F4
-    #define COMSerial Serial
-    #define Serial SerialUSB
-    TH02_dev TH02;
-#endif
-
-int light_sensor = A3; 
-
-void setup() {
-    Serial.begin(9600);        // start serial for output
-
-    Serial.println("****TH02_dev demo by seeed studio****\n");
-    /* Power up,delay 150ms,until voltage is stable */
-    delay(150);
-    /* Reset HP20x_dev */
+    delay(150); // Wait for voltage to stabilize
     TH02.begin();
     delay(100);
 
-    /* Determine TH02_dev is available or not */
     Serial.println("TH02_dev is available.\n");
 }
 
+void loop()
+{
+    buttonRedState = digitalRead(buttonRedPin);
+    buttonGreenState = digitalRead(buttonGreenPin);
 
-void loop() {
-    ///////////////////////////////////////////////////////
-    /////////////// Initalisation variables ///////////////
-    ///////////////////////////////////////////////////////
+    if (buttonRedState == LOW)
+    {
+        Serial.println("Button Red is pressed");
+    }
+    else
+    {
+        Serial.println("Button Red is not pressed");
+    }
 
-    // Capteur de luminosité
-    int raw_light = analogRead(light_sensor); // read the raw value from light_sensor pin (A3)
-    int light = map(raw_light, 0, 1023, 0, 100); // map the value from 0, 1023 to 0, 100
+    if (buttonGreenState == LOW)
+    {
+        Serial.println("Button Green is pressed");
+    }
+    else
+    {
+        Serial.println("Button Green is not pressed");
+    }
 
-    // Capteur de température - Humidité
-    float temper = TH02.ReadTemperature();
+    // Read light sensor value and map it to percentage
+    int rawLightValue = analogRead(LIGHT_SENSOR_PIN);
+    int lightLevel = map(rawLightValue, 0, 1023, 0, 100);
+
+    // Read temperature and humidity from TH02 sensor
+    float temperature = TH02.ReadTemperature();
     float humidity = TH02.ReadHumidity();
 
-    ///////////////////////////////////////////////////////
-    ///////////////////// Sortie Série ////////////////////
-    ///////////////////////////////////////////////////////
-
-
-    // Capteur de température - Humidité
+    // Print temperature and humidity values to serial
     Serial.print("Temperature: ");
-    Serial.print(temper);
-    Serial.println("C\r\n");
-    
+    Serial.print(temperature);
+    Serial.println("C");
+
     Serial.print("Humidity: ");
     Serial.print(humidity);
-    Serial.println("%\r\n");
+    Serial.println("%");
 
-    // Capteur de luminosité
-
+    // Print light level to serial
     Serial.print("Light level: ");
-    Serial.print(light);
-    Serial.println("%\r\n");
+    Serial.print(lightLevel);
+    Serial.println("%");
 
-    delay(1000);
+    delay(1000); // Wait for 1 second before next reading
 }
