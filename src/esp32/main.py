@@ -3,6 +3,7 @@ import network
 import time
 import ujson as json
 import urequests
+import ntptime
 
 # Product data configuration
 APIKEY = "lry0mgtwjvqb537xoysw84hvaqwielif2lncab6notts4s8x1787doiylklpabpo"
@@ -27,6 +28,14 @@ def connect_to_wifi():
     
     Pin(2, Pin.OUT).value(1)
     print("Connected to WiFi:", sta_if.ifconfig())
+
+# Function to synchronize time with NTP server
+def sync_time():
+    try:
+        ntptime.settime()
+        print("Time synchronized with NTP server")
+    except Exception as e:
+        print("Failed to synchronize time:", e)
 
 # Function to create the data object
 def create_data_object(data_values, timestamp):
@@ -83,31 +92,39 @@ def main():
     while True:
         uart_data = read_uart()
         if uart_data:
-            # Extract data from UART and add to data_values list
-            if "Temperature:" in uart_data:
-                temperature = float(uart_data.split(":")[1].replace("C", "").strip())
-                data_values.append(("temperature", temperature))
-            elif "Humidity:" in uart_data:
-                humidity = float(uart_data.split(":")[1].replace("%", "").strip())
-                data_values.append(("humidity", humidity))
-            elif "Light level:" in uart_data:
-                light_level = float(uart_data.split(":")[1].replace("%", "").strip())
-                data_values.append(("light_level", light_level))
-            else:
-                # For redButtonState and greenButtonState
-                try:
-                    value = int(uart_data)
-                    if "redButtonState" not in [d[0] for d in data_values]:
-                        data_values.append(("redButtonState", value))
-                    elif "greenButtonState" not in [d[0] for d in data_values]:
-                        data_values.append(("greenButtonState", value))
-                except ValueError:
-                    pass
+            print(f"Raw UART data: {uart_data}")  # Debug print statement
+
+            try:
+                # Extract data from UART and add to data_values list
+                if "Temperature:" in uart_data:
+                    temperature = float(uart_data.split(":")[1].replace("C", "").strip())
+                    data_values.append(("temperature", temperature))
+                elif "Humidity:" in uart_data:
+                    humidity = float(uart_data.split(":")[1].replace("%", "").strip())
+                    data_values.append(("humidity", humidity))
+                elif "Light level:" in uart_data:
+                    light_level = float(uart_data.split(":")[1].replace("%", "").strip())
+                    data_values.append(("light_level", light_level))
+                elif "Sound level:" in uart_data:
+                    sound_level = float(uart_data.split(":")[1].strip())
+                    data_values.append(("sound_level", sound_level))
+                elif "redButtonState" in uart_data:
+                    red_button_state = int(uart_data.split(":")[1].strip())
+                    data_values.append(("red_button_state", red_button_state))
+                elif "greenButtonState" in uart_data:
+                    green_button_state = int(uart_data.split(":")[1].strip())
+                    data_values.append(("green_button_state", green_button_state))
+            except ValueError as e:
+                print(f"Error parsing UART data: {e}")
 
         # Once we have collected all necessary data, prepare and send the JSON payload
         if len(data_values) >= 5:  # Assuming we are collecting 5 different values
-            timestamp = int(time.time())
-            payload_data = create_data_object(data_values, timestamp)
+            # Getting the current timestamp
+            ts = time.time()
+            ts += 946677600
+
+            print("Timestamp:", ts)
+            payload_data = create_data_object(data_values, ts)
             payload_json = json.dumps(payload_data)
             print("Prepared JSON payload:\n", payload_json)
             
@@ -117,12 +134,15 @@ def main():
             # Clear data_values list for the next round of data collection
             data_values.clear()
 
-        time.sleep(0.1)
+        time.sleep(2)
 
 # Entry point of the program
 if __name__ == "__main__":
     # Connect to Wi-Fi
     connect_to_wifi()
+    
+    # Synchronize time with NTP server
+    sync_time()
     
     # Run main function
     main()
