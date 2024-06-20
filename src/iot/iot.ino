@@ -3,6 +3,7 @@
 #include "libraries/LedModule/LedModule.h"
 #include "libraries/LightSensor/LightSensor.h"
 #include "libraries/OledModule/OledModule.h"
+#include "libraries/SoundSensor/SoundSensor.h"
 #include "libraries/TH02Module/TH02Module.h"
 #include "Arduino.h"
 #include <SoftwareSerial.h>
@@ -10,6 +11,7 @@
 
 #define buttonRedPin 5
 #define buttonGreenPin 4
+#define SOUND_SENSOR_PIN A2
 #define LIGHT_SENSOR_PIN A3
 #define SERIAL_BAUD_RATE 9600
 #define RX_PIN 8
@@ -21,18 +23,15 @@
 ButtonModule buttonRed(buttonRedPin);
 ButtonModule buttonGreen(buttonGreenPin);
 LightSensorModule lightSensor(LIGHT_SENSOR_PIN);
+SoundSensorModule soundSensor(SOUND_SENSOR_PIN);
 TH02Module th02Sensor;
+OLEDModule oled; // Création d'une instance d'OLEDModule
 
-SoftwareSerial mySerial(RX_PIN, TX_PIN);     // RX, TX
-U8GLIB_SSD1306_128X32 u8g(U8G_I2C_OPT_NONE); // I2C / TWI
+SoftwareSerial mySerial(RX_PIN, TX_PIN); // RX, TX
 
 void show_empty_screen()
 {
-    u8g.firstPage();
-    do
-    {
-        // Ne rien dessiner pour afficher un écran vide
-    } while (u8g.nextPage());
+    oled.showEmptyScreen();
 }
 
 void setup()
@@ -42,7 +41,9 @@ void setup()
     buttonRed.init();
     buttonGreen.init();
     lightSensor.init();
+    soundSensor.init();
     th02Sensor.init();
+    oled.init(); // Initialisation de l'écran OLED
 
     pinMode(BUZZER_PIN, OUTPUT);    // Configurer la broche du buzzer comme sortie
     pinMode(LED_RED_PIN, OUTPUT);   // Configurer la broche de la LED rouge comme sortie
@@ -66,15 +67,16 @@ void loop()
     int lightLevel = lightSensor.getLightLevel();
     float temperature = th02Sensor.getTemperature();
     float humidity = th02Sensor.getHumidity();
+    int soundLevel = soundSensor.getSoundLevel();
 
-    // Affiche un écran vide sur l'OLED
-    show_empty_screen();
+    // Afficher les valeurs sur l'OLED
+    oled.displayValues(temperature, humidity, lightLevel, soundLevel);
 
     // Activer le buzzer et la LED verte si le bouton vert est pressé
     if (buttonGreen.isPressed())
     {
-        tone(BUZZER_PIN, 500);             // Émettre un son de 1000 Hz
-        delay(100);                        // Maintenir le son pendant 10 ms
+        tone(BUZZER_PIN, 500);             // Émettre un son de 500 Hz
+        delay(100);                        // Maintenir le son pendant 100 ms
         noTone(BUZZER_PIN);                // Arrêter le son
         digitalWrite(LED_GREEN_PIN, HIGH); // Allumer la LED verte
     }
@@ -105,6 +107,8 @@ void loop()
     Serial.print("Light level: ");
     Serial.print(lightLevel);
     Serial.println("%");
+    Serial.print("Sound level: ");
+    Serial.println(soundLevel);
 
     // Send data to ESP32
     mySerial.println(redButtonState);
@@ -118,6 +122,8 @@ void loop()
     mySerial.print("Light level: ");
     mySerial.print(lightLevel);
     mySerial.println("%");
+    mySerial.print("Sound level: ");
+    mySerial.println(soundLevel);
 
     delay(1000); // Wait for 1 second before next reading
 }
